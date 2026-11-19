@@ -2,15 +2,15 @@ import fs from 'fs';
 import path from 'path';
 import {defineConfig, type Plugin} from 'vite';
 
-const webDir = path.resolve(__dirname, 'sediment/www');
-const distDir = path.resolve(__dirname, 'dist');
+const webDir = path.resolve(import.meta.dirname, 'sediment/www');
+const distDir = path.resolve(import.meta.dirname, 'dist');
 const downloads: Record<string, {file: string; type: string}> = {
   '/sediment-debug.apk': {
-    file: path.resolve(__dirname, 'sediment-debug.apk'),
+    file: path.resolve(import.meta.dirname, 'sediment-debug.apk'),
     type: 'application/vnd.android.package-archive',
   },
   '/sediment-project.zip': {
-    file: path.resolve(__dirname, 'sediment-project.zip'),
+    file: path.resolve(import.meta.dirname, 'sediment-project.zip'),
     type: 'application/zip',
   },
 };
@@ -21,6 +21,11 @@ function sedimentStaticPlugin(): Plugin {
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const urlPath = req.url?.split('?')[0];
+        if (urlPath === '/@vite/client') {
+          res.setHeader('Content-Type', 'application/javascript');
+          res.end('export {};\n');
+          return;
+        }
         const entry = urlPath ? downloads[urlPath] : undefined;
         if (entry && fs.existsSync(entry.file)) {
           const stat = fs.statSync(entry.file);
@@ -66,7 +71,8 @@ export default defineConfig(() => {
       host: '0.0.0.0',
       port: 3000,
       allowedHosts: true as const,
-      hmr: process.env.DISABLE_HMR !== 'true',
+      ws: false as const,
+      hmr: false,
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
     },
   };
