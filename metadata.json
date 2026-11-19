@@ -1,0 +1,6 @@
+{
+  "name": "Sediment",
+  "description": "A todo app where every finished task becomes a star in your sky.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

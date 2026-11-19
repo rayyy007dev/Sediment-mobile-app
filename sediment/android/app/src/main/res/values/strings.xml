@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Sediment</string>
+    <string name="title_activity_main">Sediment</string>
+    <string name="package_name">com.sediment.app</string>
+    <string name="custom_url_scheme">com.sediment.app</string>
+</resources>
