@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sediment-shell-v14';
+const CACHE_NAME = 'sediment-shell-v15';
 const APP_SHELL = [
   './',
   './index.html',
@@ -43,16 +43,13 @@ self.addEventListener('fetch', (event) => {
 
   if (req.mode === 'navigate') {
     event.respondWith(
-      caches.match('./index.html').then((cached) => {
-        const net = fetch(req).then((res) => {
-          if (res && res.ok) {
-            const copy = res.clone();
-            caches.open(CACHE_NAME).then((c) => c.put('./index.html', copy));
-          }
-          return res;
-        }).catch(() => cached);
-        return cached || net;
-      })
+      fetch(req).then((res) => {
+        if (res && res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((c) => c.put('./index.html', copy));
+        }
+        return res;
+      }).catch(() => caches.match('./index.html'))
     );
     return;
   }
