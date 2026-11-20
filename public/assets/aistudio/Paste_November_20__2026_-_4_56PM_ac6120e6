@@ -1,0 +1,1668 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Sediment</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500&display=swap"
+    />
+
+    <style>
+      :root {
+        --base: #f4ecfa;
+        --ink: #2a2147;
+        --mute: #7a6e99;
+        --glass: rgba(255, 255, 255, 0.55);
+        --edge: rgba(255, 255, 255, 0.85);
+        --tooltip: rgba(255, 255, 255, 0.85);
+        --balloon-one: #ffae98;
+        --balloon-two: #b7a4ff;
+        --balloon-three: #93e4dd;
+        --balloon-opacity: 0.6;
+        --star: #3b2a78;
+
+        --serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+        --sans:
+          "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+        color-scheme: light;
+        box-sizing: border-box;
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --base: #080919;
+          --ink: #f2efff;
+          --mute: #9c99c8;
+          --glass: rgba(255, 255, 255, 0.06);
+          --edge: rgba(255, 255, 255, 0.14);
+          --tooltip: rgba(20, 18, 50, 0.85);
+          --balloon-one: #d23fa0;
+          --balloon-two: #5a3df0;
+          --balloon-three: #0f9fbd;
+          --balloon-opacity: 0.5;
+          --star: #ffe3b3;
+          color-scheme: dark;
+        }
+      }
+
+      :root[data-theme="dark"] {
+        --base: #080919;
+        --ink: #f2efff;
+        --mute: #9c99c8;
+        --glass: rgba(255, 255, 255, 0.06);
+        --edge: rgba(255, 255, 255, 0.14);
+        --tooltip: rgba(20, 18, 50, 0.85);
+        --balloon-one: #d23fa0;
+        --balloon-two: #5a3df0;
+        --balloon-three: #0f9fbd;
+        --balloon-opacity: 0.5;
+        --star: #ffe3b3;
+        color-scheme: dark;
+      }
+
+      html {
+        scroll-padding-top: env(safe-area-inset-top, 0px);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        background: var(--base);
+        color: var(--ink);
+        font: 400 16px/1.5 var(--sans);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* A soft, drifting background behind the star canvas. */
+      .aurora {
+        position: fixed;
+        z-index: 0;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
+      .aurora i {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(90px);
+        opacity: var(--balloon-opacity);
+        animation: drift 30s ease-in-out infinite alternate;
+      }
+
+      .aurora i:nth-child(1) {
+        width: 60vmax;
+        height: 60vmax;
+        left: -18vmax;
+        top: -22vmax;
+        background: var(--balloon-two);
+      }
+
+      .aurora i:nth-child(2) {
+        width: 50vmax;
+        height: 50vmax;
+        right: -18vmax;
+        top: 8vh;
+        background: var(--balloon-one);
+        animation-duration: 38s;
+      }
+
+      .aurora i:nth-child(3) {
+        width: 55vmax;
+        height: 55vmax;
+        left: 18vw;
+        bottom: -32vmax;
+        background: var(--balloon-three);
+        animation-duration: 46s;
+      }
+
+      @keyframes drift {
+        to {
+          transform: translate(7vw, -5vh) scale(1.15);
+        }
+      }
+
+      /* Subtle paper-like grain over the entire page. */
+      body::after {
+        content: "";
+        position: fixed;
+        z-index: 3;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.07;
+        mix-blend-mode: overlay;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+      }
+
+      #sky {
+        position: fixed;
+        z-index: 1;
+        inset: 0;
+      }
+
+      main {
+        position: relative;
+        z-index: 2;
+        max-width: 580px;
+        margin: 0 auto;
+        padding: 13vh 22px 120px;
+        pointer-events: none;
+      }
+
+      header {
+        margin-bottom: 40px;
+      }
+
+      h1 {
+        margin: 0 0 16px;
+        font: 400 clamp(52px, 10vw, 92px)/0.95 var(--serif);
+        letter-spacing: -0.025em;
+      }
+
+      .sub {
+        max-width: 420px;
+        margin: 0;
+        color: var(--mute);
+        font-size: 17px;
+      }
+
+      .glass {
+        pointer-events: auto;
+        background: var(--glass);
+        border: 1px solid var(--edge);
+        backdrop-filter: blur(22px) saturate(150%);
+        -webkit-backdrop-filter: blur(22px) saturate(150%);
+        box-shadow: 0 18px 50px -24px rgba(20, 10, 60, 0.45);
+      }
+
+      .add-task {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 8px 8px 28px;
+        border-radius: 40px;
+        transition: box-shadow 0.25s;
+      }
+
+      .add-task:focus-within {
+        box-shadow:
+          0 0 0 4px color-mix(in srgb, var(--balloon-two) 35%, transparent),
+          0 18px 50px -24px rgba(20, 10, 60, 0.45);
+      }
+
+      .add-task input {
+        flex: 1;
+        min-width: 0;
+        padding: 14px 0;
+        border: 0;
+        outline: none;
+        background: none;
+        color: var(--ink);
+        font: inherit;
+        font-size: 19px;
+      }
+
+      .add-task input::placeholder {
+        color: var(--mute);
+      }
+
+      .add-task button {
+        flex: none;
+        width: 48px;
+        height: 48px;
+        border: 0;
+        border-radius: 50%;
+        background: linear-gradient(
+          135deg,
+          var(--balloon-two),
+          var(--balloon-one)
+        );
+        color: #fff;
+        cursor: pointer;
+        font: 300 28px/1 var(--sans);
+        transition: transform 0.2s;
+      }
+
+      .add-task button:hover {
+        transform: rotate(90deg) scale(1.06);
+      }
+
+      ul {
+        margin: 22px 0 0;
+        padding: 0;
+        list-style: none;
+        pointer-events: none;
+      }
+
+      li.open-task {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        margin-bottom: 10px;
+        padding: 18px 22px;
+        border-radius: 24px;
+      }
+
+      .finish-button {
+        flex: none;
+        width: 26px;
+        height: 26px;
+        padding: 0;
+        border: 1.5px solid var(--mute);
+        border-radius: 50%;
+        background: none;
+        cursor: pointer;
+        transition: all 0.25s;
+      }
+
+      .finish-button:hover {
+        border-color: transparent;
+        background: linear-gradient(
+          135deg,
+          var(--balloon-two),
+          var(--balloon-one)
+        );
+        box-shadow: 0 0 18px
+          color-mix(in srgb, var(--balloon-one) 60%, transparent);
+      }
+
+      .task-text {
+        flex: 1;
+        min-width: 0;
+        font-size: 19px;
+        word-break: break-word;
+        cursor: text;
+      }
+
+      .task-editor {
+        flex: 1;
+        min-width: 0;
+        padding: 0;
+        border: 0;
+        border-bottom: 1px solid var(--balloon-two);
+        outline: none;
+        background: none;
+        color: var(--ink);
+        font: inherit;
+        font-size: 19px;
+      }
+
+      .task-age {
+        flex: none;
+        color: var(--mute);
+        font-size: 13px;
+        white-space: nowrap;
+      }
+
+      li.finished-animation {
+        animation: finish 0.55s ease forwards;
+      }
+
+      @keyframes finish {
+        to {
+          opacity: 0;
+          transform: translateY(-30px) scale(0.96);
+          filter: blur(8px);
+        }
+      }
+
+      .empty-state {
+        padding: 24px 8px;
+        color: var(--mute);
+        font: italic 400 24px/1.3 var(--serif);
+        pointer-events: none;
+      }
+
+      .archive {
+        margin-top: 34px;
+        padding: 16px 22px;
+        border-radius: 24px;
+      }
+
+      summary {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--mute);
+        font-size: 14px;
+        list-style: none;
+        cursor: pointer;
+      }
+
+      summary::-webkit-details-marker {
+        display: none;
+      }
+
+      summary::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        border-right: 1.5px solid currentColor;
+        border-bottom: 1.5px solid currentColor;
+        transform: rotate(-45deg);
+        transition: transform 0.2s;
+      }
+
+      details[open] > summary::before {
+        transform: rotate(45deg);
+      }
+
+      .archive ul {
+        margin: 14px 0 0;
+      }
+
+      li.archived-task {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 9px 0;
+        border-top: 1px solid var(--edge);
+        color: var(--mute);
+        pointer-events: auto;
+      }
+
+      li.archived-task .task-text {
+        font-size: 16px;
+        cursor: default;
+      }
+
+      .star-mark {
+        flex: none;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--star);
+        box-shadow: 0 0 10px var(--star);
+      }
+
+      .text-button {
+        padding: 2px;
+        border: 0;
+        background: none;
+        color: var(--mute);
+        cursor: pointer;
+        font: inherit;
+        font-size: 13px;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
+
+      .text-button:hover {
+        color: var(--ink);
+      }
+
+      .backup {
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid var(--edge);
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 96px;
+        padding: 10px;
+        border: 1px solid var(--edge);
+        border-radius: 12px;
+        background: transparent;
+        color: var(--ink);
+        font:
+          12px/1.5 ui-monospace,
+          Menlo,
+          Consolas,
+          monospace;
+        resize: vertical;
+      }
+
+      .backup-actions {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-top: 8px;
+      }
+
+      .backup-message {
+        color: var(--mute);
+        font-size: 13px;
+      }
+
+      .note {
+        display: grid;
+        gap: 4px;
+        margin: 12px 0 0;
+        color: var(--mute);
+        font-size: 14px;
+      }
+
+      .note .quote {
+        color: var(--ink);
+        font-family: var(--serif);
+        font-size: 20px;
+      }
+
+      .note-panel {
+        margin-top: 18px;
+      }
+
+      .note-panel summary {
+        cursor: pointer;
+      }
+
+      .note-actions {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-top: 8px;
+      }
+
+      .note-message {
+        color: var(--mute);
+        font-size: 13px;
+      }
+
+      .note-list {
+        margin-top: 12px;
+      }
+
+      .note-list li {
+        display: grid;
+        gap: 2px;
+        padding: 9px 0;
+        border-top: 1px solid var(--edge);
+        color: var(--mute);
+        font-size: 13px;
+      }
+
+      .sky-button {
+        position: fixed;
+        z-index: 6;
+        top: calc(68px + env(safe-area-inset-top, 0px));
+        right: 20px;
+        padding: 8px 12px;
+        border: 0;
+        border-radius: 20px;
+        color: var(--ink);
+        cursor: pointer;
+        font: inherit;
+        font-size: 13px;
+      }
+
+      .theme-button {
+        position: fixed;
+        z-index: 6;
+        top: calc(18px + env(safe-area-inset-top, 0px));
+        right: 20px;
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        border-radius: 50%;
+        color: var(--ink);
+        cursor: pointer;
+        font-size: 16px;
+      }
+
+      .hint {
+        position: fixed;
+        z-index: 2;
+        bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+        left: 24px;
+        max-width: 60vw;
+        margin: 0;
+        color: var(--mute);
+        font-size: 13px;
+        pointer-events: none;
+      }
+
+      #tip {
+        position: fixed;
+        z-index: 5;
+        display: none;
+        max-width: 260px;
+        padding: 12px 16px;
+        border: 1px solid var(--edge);
+        border-radius: 16px;
+        background: var(--tooltip);
+        box-shadow: 0 14px 40px -12px rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        transform: translate(-50%, -100%);
+        pointer-events: none;
+      }
+
+      #tip.below {
+        transform: translate(-50%, 0);
+      }
+
+      #tip.pin {
+        pointer-events: auto;
+      }
+
+      #tip b {
+        display: block;
+        font: 400 20px/1.2 var(--serif);
+        word-break: break-word;
+      }
+
+      #tip small {
+        color: var(--mute);
+        font-size: 12px;
+      }
+
+      #tip .text-button {
+        display: block;
+        margin-top: 6px;
+        padding: 0;
+      }
+
+      .finish-button:focus-visible,
+      .theme-button:focus-visible,
+      .add-task button:focus-visible,
+      .text-button:focus-visible,
+      summary:focus-visible {
+        outline: 2px solid var(--balloon-two);
+        outline-offset: 3px;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          animation: none !important;
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="aurora" aria-hidden="true">
+      <i></i><i></i><i></i>
+    </div>
+
+    <canvas id="sky"></canvas>
+
+    <button
+      class="glass theme-button"
+      id="theme"
+      title="Switch light or dark"
+      aria-label="Switch light or dark"
+    >
+      ◐
+    </button>
+    <button class="glass sky-button" id="skyBtn" hidden>✦ Sky</button>
+
+    <main>
+      <header>
+        <h1 id="hello">Hello.</h1>
+        <p class="sub" id="sub"></p>
+        <p class="note" id="note" hidden></p>
+      </header>
+
+      <div class="glass add-task">
+        <input
+          id="in"
+          type="text"
+          placeholder="Add something…"
+          autocomplete="off"
+          aria-label="New task"
+        />
+        <button id="addBtn" aria-label="Add task">+</button>
+      </div>
+
+      <ul id="open"></ul>
+
+      <details class="glass archive note-panel" id="noteWrap" open>
+        <summary id="noteSum">Note to tomorrow</summary>
+        <textarea
+          id="noteBox"
+          spellcheck="false"
+          maxlength="600"
+          aria-label="Note to tomorrow"
+          placeholder="What should tomorrow-you remember, finish or feel?"
+        ></textarea>
+        <div class="note-actions">
+          <button class="text-button" id="leaveNote">Leave note</button>
+          <span class="note-message" id="noteMsg">It greets you here tomorrow.</span>
+        </div>
+        <ul class="note-list" id="notes"></ul>
+      </details>
+
+      <details class="glass archive">
+        <summary id="archSum"></summary>
+        <ul id="done"></ul>
+
+        <div class="backup">
+          <textarea
+            id="box"
+            spellcheck="false"
+            aria-label="Backup data"
+          ></textarea>
+          <div class="backup-actions">
+            <button class="text-button" id="copy">Copy backup</button>
+            <button class="text-button" id="save">Save backup</button>
+            <button class="text-button" id="load">Restore from text</button>
+            <span class="backup-message" id="msg"></span>
+          </div>
+        </div>
+      </details>
+    </main>
+
+    <div id="tip">
+      <b id="tipText"></b>
+      <small id="tipDate"></small>
+      <button class="text-button" id="reopen">Reopen task</button>
+    </div>
+
+    <p class="hint" id="hint"></p>
+
+    <script>
+      (function () {
+        "use strict";
+
+        const STORAGE_KEY = "sediment.v1";
+        const THEME_KEY = STORAGE_KEY + ".theme";
+        const prefersReducedMotion = window.matchMedia(
+          "(prefers-reduced-motion: reduce)",
+        ).matches;
+
+        let tasks = [];
+        let memoryBackup = null;
+        let hoveredTaskId = null;
+        let pinnedTaskId = null;
+        let starColor = "#fff";
+
+        const starPositions = {};
+        const skyCanvas = document.getElementById("sky");
+        const canvasContext = skyCanvas.getContext("2d");
+        let canvasWidth = 0;
+        let canvasHeight = 0;
+
+        // Storage
+        function readTasks() {
+          try {
+            const savedTasks = localStorage.getItem(STORAGE_KEY);
+            if (savedTasks) {
+              return JSON.parse(savedTasks);
+            }
+          } catch (error) {
+            // Storage can be unavailable while the app is open.
+          }
+
+          return memoryBackup ? JSON.parse(memoryBackup) : [];
+        }
+
+        function saveTasks() {
+          const serializedTasks = JSON.stringify(tasks);
+          memoryBackup = serializedTasks;
+
+          try {
+            localStorage.setItem(STORAGE_KEY, serializedTasks);
+          } catch (error) {
+            // The in-memory backup keeps the session usable.
+          }
+        }
+
+        try {
+          if (navigator.storage && navigator.storage.persist) {
+            navigator.storage.persist();
+          }
+        } catch (error) {
+          // Persistent storage is optional.
+        }
+
+        // Task helpers
+        function createTaskId() {
+          return (
+            Date.now().toString(36) +
+            Math.random().toString(36).slice(2, 6)
+          );
+        }
+
+        function hashText(text) {
+          let hash = 2166136261;
+
+          for (let index = 0; index < text.length; index += 1) {
+            hash ^= text.charCodeAt(index);
+            hash = Math.imul(hash, 16777619);
+          }
+
+          return hash >>> 0;
+        }
+
+        function createRandomGenerator(seed) {
+          return function () {
+            seed |= 0;
+            seed = (seed + 0x6d2b79f5) | 0;
+
+            let value = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+            value =
+              (value + Math.imul(value ^ (value >>> 7), 61 | value)) ^
+              value;
+
+            return ((value ^ (value >>> 14)) >>> 0) /
+              4294967296;
+          };
+        }
+
+        function describeAge(timestamp) {
+          const minutes = Math.floor(
+            (Date.now() - timestamp) / 60000,
+          );
+
+          if (minutes < 1) {
+            return "just now";
+          }
+          if (minutes < 60) {
+            return minutes + " min ago";
+          }
+
+          const hours = Math.floor(minutes / 60);
+          if (hours < 24) {
+            return (
+              hours +
+              (hours === 1 ? " hour ago" : " hours ago")
+            );
+          }
+
+          const days = Math.floor(hours / 24);
+          return days + (days === 1 ? " day ago" : " days ago");
+        }
+
+        function formatCompletionDate(timestamp) {
+          return new Date(timestamp).toLocaleDateString(
+            undefined,
+            {
+              month: "short",
+              day: "numeric",
+            },
+          );
+        }
+
+        function getFinishedTasks() {
+          return tasks
+            .filter(function (task) {
+              return task.done;
+            })
+            .sort(function (first, second) {
+              return first.done - second.done;
+            });
+        }
+
+        // Sky canvas
+        function createBackgroundDust() {
+          const random = createRandomGenerator(7);
+          const dust = [];
+
+          for (let index = 0; index < 150; index += 1) {
+            dust.push({
+              x: random(),
+              y: random(),
+              size: 0.4 + random() * 0.9,
+              phase: random() * 6.28,
+            });
+          }
+
+          return dust;
+        }
+
+        const backgroundDust = createBackgroundDust();
+
+        function resizeCanvas() {
+          const pixelDensity = Math.min(
+            window.devicePixelRatio || 1,
+            2,
+          );
+
+          canvasWidth = window.innerWidth;
+          canvasHeight = window.innerHeight;
+          skyCanvas.width = canvasWidth * pixelDensity;
+          skyCanvas.height = canvasHeight * pixelDensity;
+          skyCanvas.style.width = canvasWidth + "px";
+          skyCanvas.style.height = canvasHeight + "px";
+          canvasContext.setTransform(
+            pixelDensity,
+            0,
+            0,
+            pixelDensity,
+            0,
+            0,
+          );
+        }
+
+        function refreshStarColor() {
+          const cssColor = getComputedStyle(
+            document.documentElement,
+          ).getPropertyValue("--star");
+          starColor = cssColor.trim() || "#fff";
+        }
+
+        function getStarPosition(task) {
+          if (!starPositions[task.id]) {
+            const random = createRandomGenerator(
+              hashText(task.id),
+            );
+
+            starPositions[task.id] = {
+              x: 0.05 + 0.9 * random(),
+              y: 0.06 + 0.88 * random(),
+              size: 2.4 + random() * 2.2,
+              phase: random() * 6.28,
+            };
+          }
+
+          return starPositions[task.id];
+        }
+
+        function drawSky(timestamp) {
+          canvasContext.clearRect(
+            0,
+            0,
+            canvasWidth,
+            canvasHeight,
+          );
+          canvasContext.fillStyle = starColor;
+          canvasContext.strokeStyle = starColor;
+
+          // Dim, slowly twinkling background particles
+          backgroundDust.forEach(function (particle) {
+            canvasContext.globalAlpha =
+              0.12 +
+              0.22 *
+                (0.5 +
+                  0.5 *
+                    Math.sin(
+                      timestamp * 0.0008 +
+                        particle.phase,
+                    ));
+            canvasContext.beginPath();
+            canvasContext.arc(
+              particle.x * canvasWidth,
+              particle.y * canvasHeight,
+              particle.size,
+              0,
+              6.283,
+            );
+            canvasContext.fill();
+          });
+
+          const finishedTasks = getFinishedTasks();
+
+          // Draw the constellation line.
+          canvasContext.globalAlpha = 0.17;
+          canvasContext.lineWidth = 1;
+          canvasContext.beginPath();
+
+          finishedTasks.forEach(function (task, index) {
+            const position = getStarPosition(task);
+            if (index === 0) {
+              canvasContext.moveTo(
+                position.x * canvasWidth,
+                position.y * canvasHeight,
+              );
+            } else {
+              canvasContext.lineTo(
+                position.x * canvasWidth,
+                position.y * canvasHeight,
+              );
+            }
+          });
+          canvasContext.stroke();
+
+          // Draw each finished task as a star.
+          canvasContext.shadowColor = starColor;
+          canvasContext.shadowBlur = 16;
+
+          finishedTasks.forEach(function (task) {
+            const position = getStarPosition(task);
+            const taskAge = Date.now() - task.done;
+            const newStarBoost =
+              taskAge < 2500
+                ? 1 + 3 * Math.exp(-taskAge / 500)
+                : 1;
+
+            canvasContext.globalAlpha =
+              0.82 +
+              0.18 *
+                Math.sin(
+                  timestamp * 0.002 + position.phase,
+                );
+            canvasContext.beginPath();
+            canvasContext.arc(
+              position.x * canvasWidth,
+              position.y * canvasHeight,
+              position.size * newStarBoost,
+              0,
+              6.283,
+            );
+            canvasContext.fill();
+          });
+
+          canvasContext.shadowBlur = 0;
+
+          // Highlight the hovered or pinned star.
+          const highlightedTaskId =
+            pinnedTaskId || hoveredTaskId;
+          if (highlightedTaskId) {
+            const highlightedTask = tasks.find(function (
+              task,
+            ) {
+              return task.id === highlightedTaskId;
+            });
+
+            if (
+              highlightedTask &&
+              highlightedTask.done
+            ) {
+              const position =
+                getStarPosition(highlightedTask);
+
+              canvasContext.globalAlpha = 0.6;
+              canvasContext.lineWidth = 1.2;
+              canvasContext.beginPath();
+              canvasContext.arc(
+                position.x * canvasWidth,
+                position.y * canvasHeight,
+                position.size + 8,
+                0,
+                6.283,
+              );
+              canvasContext.stroke();
+            }
+          }
+
+          canvasContext.globalAlpha = 1;
+        }
+
+        function animateSky(timestamp) {
+          drawSky(timestamp);
+          if (!prefersReducedMotion) {
+            window.requestAnimationFrame(animateSky);
+          }
+        }
+
+        // Star hover and tooltip behavior
+        function findStarAtPoint(mouseX, mouseY) {
+          let closestTask = null;
+          let closestDistance = 18;
+
+          getFinishedTasks().forEach(function (task) {
+            const position = getStarPosition(task);
+            const distance = Math.hypot(
+              position.x * canvasWidth - mouseX,
+              position.y * canvasHeight - mouseY,
+            );
+
+            if (distance < closestDistance) {
+              closestDistance = distance;
+              closestTask = task;
+            }
+          });
+
+          return closestTask;
+        }
+
+        function showStarTooltip(task, pinned) {
+          const position = getStarPosition(task);
+          const tooltip = document.getElementById("tip");
+          const tooltipY = position.y * canvasHeight;
+
+          document.getElementById("tipText").textContent =
+            task.text;
+          document.getElementById("tipDate").textContent =
+            "Finished " + formatCompletionDate(task.done);
+          document.getElementById("reopen").style.display =
+            pinned ? "" : "none";
+
+          tooltip.className =
+            (pinned ? "pin " : "") +
+            (tooltipY < 110 ? "below" : "");
+          tooltip.style.left =
+            Math.min(
+              Math.max(position.x * canvasWidth, 140),
+              canvasWidth - 140,
+            ) + "px";
+          tooltip.style.top =
+            (tooltipY < 110
+              ? tooltipY + 16
+              : tooltipY - 16) + "px";
+          tooltip.style.display = "block";
+        }
+
+        function hideStarTooltip() {
+          document.getElementById("tip").style.display =
+            "none";
+        }
+
+        function eventTargetsGlass(event) {
+          return (
+            event.target.closest &&
+            event.target.closest(".glass,#tip")
+          );
+        }
+
+        window.addEventListener("mousemove", function (
+          event,
+        ) {
+          if (eventTargetsGlass(event)) {
+            hoveredTaskId = null;
+            document.body.style.cursor = "";
+            if (!pinnedTaskId) {
+              hideStarTooltip();
+            }
+            return;
+          }
+
+          const task = findStarAtPoint(
+            event.clientX,
+            event.clientY,
+          );
+          hoveredTaskId = task ? task.id : null;
+          document.body.style.cursor = task
+            ? "pointer"
+            : "";
+
+          if (!pinnedTaskId) {
+            if (task) {
+              showStarTooltip(task, false);
+            } else {
+              hideStarTooltip();
+            }
+          }
+        });
+
+        window.addEventListener("click", function (event) {
+          if (eventTargetsGlass(event)) {
+            return;
+          }
+
+          const task = findStarAtPoint(
+            event.clientX,
+            event.clientY,
+          );
+          if (task) {
+            pinnedTaskId = task.id;
+            showStarTooltip(task, true);
+          } else {
+            pinnedTaskId = null;
+            hideStarTooltip();
+          }
+        });
+
+        window.addEventListener("keydown", function (event) {
+          if (event.key === "Escape") {
+            pinnedTaskId = null;
+            hideStarTooltip();
+          }
+
+          const editingTextField =
+            /INPUT|TEXTAREA/.test(
+              document.activeElement.tagName,
+            );
+          if (event.key === "/" && !editingTextField) {
+            event.preventDefault();
+            document.getElementById("in").focus();
+          }
+        });
+
+        window.addEventListener("resize", resizeCanvas);
+
+        // Task operations
+        function addTask(text) {
+          text = text.trim();
+          if (!text) {
+            return;
+          }
+
+          tasks.unshift({
+            id: createTaskId(),
+            text: text,
+            created: Date.now(),
+            done: null,
+          });
+
+          saveTasks();
+          renderTaskList();
+        }
+
+        function finishTask(taskId, listItem) {
+          listItem.classList.add("finished-animation");
+
+          window.setTimeout(function () {
+            const task = tasks.find(function (candidate) {
+              return candidate.id === taskId;
+            });
+
+            if (task) {
+              task.done = Date.now();
+            }
+
+            saveTasks();
+            renderTaskList();
+          }, 520);
+        }
+
+        function reopenTask(taskId) {
+          const task = tasks.find(function (candidate) {
+            return candidate.id === taskId;
+          });
+
+          if (task) {
+            task.done = null;
+            task.created = Date.now();
+          }
+
+          if (pinnedTaskId === taskId) {
+            pinnedTaskId = null;
+            hideStarTooltip();
+          }
+
+          saveTasks();
+          renderTaskList();
+        }
+
+        function editTask(taskId, textElement) {
+          const task = tasks.find(function (candidate) {
+            return candidate.id === taskId;
+          });
+          const textInput = document.createElement("input");
+          let finishedEditing = false;
+
+          textInput.className = "task-editor";
+          textInput.value = task.text;
+          textElement.replaceWith(textInput);
+          textInput.focus();
+          textInput.select();
+
+          function finishEditing(saveChanges) {
+            if (finishedEditing) {
+              return;
+            }
+            finishedEditing = true;
+
+            if (saveChanges && textInput.value.trim()) {
+              task.text = textInput.value.trim();
+              saveTasks();
+            }
+
+            renderTaskList();
+          }
+
+          textInput.addEventListener("keydown", function (
+            event,
+          ) {
+            if (event.key === "Enter") {
+              finishEditing(true);
+            }
+            if (event.key === "Escape") {
+              finishEditing(false);
+            }
+          });
+
+          textInput.addEventListener("blur", function () {
+            finishEditing(true);
+          });
+        }
+
+        // Task list rendering
+        function renderTaskList() {
+          refreshStarColor();
+
+          const openTasks = tasks.filter(function (task) {
+            return !task.done;
+          });
+          const finishedTasks =
+            getFinishedTasks().reverse();
+          const finishedCount = finishedTasks.length;
+          const currentHour = new Date().getHours();
+
+          if (currentHour < 5) {
+            document.getElementById("hello").textContent =
+              "Still up?";
+          } else if (currentHour < 12) {
+            document.getElementById("hello").textContent =
+              "Good morning.";
+          } else if (currentHour < 18) {
+            document.getElementById("hello").textContent =
+              "Good afternoon.";
+          } else {
+            document.getElementById("hello").textContent =
+              "Good evening.";
+          }
+
+          if (!openTasks.length && !finishedCount) {
+            document.getElementById("sub").textContent =
+              "The sky is empty. Every task you finish becomes a star.";
+          } else if (!openTasks.length) {
+            document.getElementById("sub").textContent =
+              "Nothing left to do. " +
+              finishedCount +
+              (finishedCount === 1
+                ? " star"
+                : " stars") +
+              " and counting.";
+          } else {
+            document.getElementById("sub").textContent =
+              openTasks.length +
+              (openTasks.length === 1
+                ? " thing"
+                : " things") +
+              " to do. " +
+              finishedCount +
+              (finishedCount === 1
+                ? " star"
+                : " stars") +
+              " in your sky.";
+          }
+
+          document.getElementById("hint").textContent =
+            finishedCount
+              ? "Each star is something you finished. Click one to reopen it."
+              : "";
+          const skyButton = document.getElementById("skyBtn");
+          skyButton.hidden = !finishedCount;
+          if (!finishedCount) {
+            document.body.classList.remove("sky");
+            skyButton.textContent = "✦ Sky";
+            skyButton.setAttribute("aria-pressed", "false");
+          }
+
+          const openList = document.getElementById("open");
+          openList.innerHTML = "";
+
+          if (!openTasks.length) {
+            const emptyItem =
+              document.createElement("li");
+            emptyItem.className = "empty-state";
+            emptyItem.textContent = finishedCount
+              ? "All clear."
+              : "Nothing here yet.";
+            openList.appendChild(emptyItem);
+          }
+
+          openTasks.forEach(function (task) {
+            const listItem =
+              document.createElement("li");
+            listItem.className = "glass open-task";
+
+            const finishButton =
+              document.createElement("button");
+            finishButton.className = "finish-button";
+            finishButton.setAttribute(
+              "aria-label",
+              "Mark done: " + task.text,
+            );
+            finishButton.onclick = function () {
+              finishTask(task.id, listItem);
+            };
+
+            const textElement =
+              document.createElement("span");
+            textElement.className = "task-text";
+            textElement.textContent = task.text;
+            textElement.title =
+              "Double-click to edit";
+            textElement.ondblclick = function () {
+              editTask(task.id, textElement);
+            };
+
+            const ageElement =
+              document.createElement("span");
+            ageElement.className = "task-age";
+            ageElement.textContent =
+              describeAge(task.created);
+
+            listItem.append(
+              finishButton,
+              textElement,
+              ageElement,
+            );
+            openList.appendChild(listItem);
+          });
+
+          document.getElementById("archSum").textContent =
+            "Archive and backup (" +
+            finishedCount +
+            " kept forever)";
+
+          const finishedList =
+            document.getElementById("done");
+          finishedList.innerHTML = "";
+
+          finishedTasks.forEach(function (task) {
+            const listItem =
+              document.createElement("li");
+            listItem.className = "archived-task";
+
+            const starElement =
+              document.createElement("span");
+            starElement.className = "star-mark";
+
+            const textElement =
+              document.createElement("span");
+            textElement.className = "task-text";
+            textElement.textContent = task.text;
+
+            const dateElement =
+              document.createElement("span");
+            dateElement.className = "task-age";
+            dateElement.textContent =
+              formatCompletionDate(task.done);
+
+            const reopenButton =
+              document.createElement("button");
+            reopenButton.className = "text-button";
+            reopenButton.textContent = "Reopen";
+            reopenButton.onclick = function () {
+              reopenTask(task.id);
+            };
+
+            listItem.append(
+              starElement,
+              textElement,
+              dateElement,
+              reopenButton,
+            );
+            finishedList.appendChild(listItem);
+          });
+
+          if (prefersReducedMotion) {
+            drawSky(window.performance.now());
+          }
+        }
+
+        // Input controls
+        document.getElementById("addBtn").onclick =
+          function () {
+            const taskInput =
+              document.getElementById("in");
+            addTask(taskInput.value);
+            taskInput.value = "";
+            taskInput.focus();
+          };
+
+        document
+          .getElementById("in")
+          .addEventListener("keydown", function (event) {
+            if (event.key === "Enter") {
+              addTask(this.value);
+              this.value = "";
+            }
+          });
+
+        document.getElementById("reopen").onclick =
+          function () {
+            if (pinnedTaskId) {
+              reopenTask(pinnedTaskId);
+            }
+          };
+
+        const NOTES_KEY = STORAGE_KEY + ".notes";
+        let notes = [];
+        function readNotes() {
+          try {
+            const savedNotes = localStorage.getItem(NOTES_KEY);
+            return savedNotes ? JSON.parse(savedNotes) : [];
+          } catch (error) {
+            return [];
+          }
+        }
+        function saveNotes() {
+          try {
+            localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+          } catch (error) {
+            // Notes remain available for the current session.
+          }
+        }
+        function renderNotes() {
+          const list = document.getElementById("notes");
+          list.innerHTML = "";
+          notes.slice().sort(function (first, second) {
+            return second.at - first.at;
+          }).forEach(function (note) {
+            const item = document.createElement("li");
+            const text = document.createElement("b");
+            const date = document.createElement("small");
+            text.textContent = note.text;
+            date.textContent = new Date(note.at).toLocaleDateString(
+              undefined,
+              { weekday: "short", month: "short", day: "numeric" },
+            );
+            item.append(text, date);
+            list.appendChild(item);
+          });
+          document.getElementById("noteSum").textContent = notes.length
+            ? "Note to tomorrow (" + notes.length + " kept)"
+            : "Note to tomorrow";
+          const previous = notes.slice().sort(function (first, second) {
+            return second.at - first.at;
+          }).find(function (note) {
+            return Date.now() - note.at >= 86400000;
+          });
+          const welcome = document.getElementById("note");
+          welcome.innerHTML = "";
+          if (previous) {
+            const quote = document.createElement("span");
+            quote.className = "quote";
+            quote.textContent = "“" + previous.text + "”";
+            const from = document.createElement("small");
+            from.textContent = "From you, yesterday";
+            welcome.append(quote, from);
+            welcome.hidden = false;
+          } else {
+            welcome.hidden = true;
+          }
+        }
+        document.getElementById("leaveNote").onclick = function () {
+          const box = document.getElementById("noteBox");
+          const text = box.value.trim();
+          const message = document.getElementById("noteMsg");
+          if (!text) {
+            message.textContent = "Write a line first.";
+            return;
+          }
+          notes.push({ id: createTaskId(), text, at: Date.now() });
+          saveNotes();
+          box.value = "";
+          renderNotes();
+          message.textContent = "Saved. It will greet you tomorrow.";
+        };
+
+        document.getElementById("skyBtn").onclick = function () {
+          const enabled = document.body.classList.toggle("sky");
+          this.textContent = enabled ? "Tasks" : "✦ Sky";
+          this.setAttribute("aria-pressed", enabled ? "true" : "false");
+          pinnedTaskId = null;
+          hideStarTooltip();
+        };
+
+        document.getElementById("copy").onclick =
+          function () {
+            const backup = JSON.stringify(
+              { v: 2, tasks, notes },
+              null,
+              1,
+            );
+            document.getElementById("box").value = backup;
+            document.getElementById("msg").textContent =
+              "Backup ready. Copy this text somewhere safe.";
+            document.getElementById("box").focus();
+            document.getElementById("box").select();
+            if (navigator.clipboard) {
+              navigator.clipboard.writeText(backup).then(
+                function () {
+                  document.getElementById("msg").textContent =
+                    "Backup copied.";
+                },
+                function () {},
+              );
+            }
+          };
+
+        document.getElementById("save").onclick = function () {
+          const backup = JSON.stringify({ v: 2, tasks, notes }, null, 1);
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(
+            new Blob([backup], { type: "application/json" }),
+          );
+          link.download =
+            "sediment-backup-" +
+            new Date().toISOString().slice(0, 10) +
+            ".json";
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          document.getElementById("msg").textContent =
+            "Backup downloaded.";
+        };
+
+        document.getElementById("load").onclick =
+          function () {
+            try {
+              const backup = JSON.parse(
+                document.getElementById("box").value,
+              );
+              const savedTasks = Array.isArray(backup)
+                ? backup
+                : backup && backup.tasks;
+              const savedNotes =
+                backup && Array.isArray(backup.notes)
+                  ? backup.notes
+                  : [];
+              if (!Array.isArray(savedTasks)) {
+                throw new Error(
+                  "Backup is not an array",
+                );
+              }
+
+              const existingIds = {};
+              tasks.forEach(function (task) {
+                existingIds[task.id] = 1;
+              });
+
+              savedTasks.forEach(function (savedTask) {
+                if (
+                  savedTask &&
+                  savedTask.id &&
+                  savedTask.text &&
+                  !existingIds[savedTask.id]
+                ) {
+                  tasks.push({
+                    id: String(savedTask.id),
+                    text: String(savedTask.text),
+                    created:
+                      +savedTask.created || Date.now(),
+                    done: savedTask.done
+                      ? +savedTask.done
+                      : null,
+                  });
+                }
+              });
+
+              const existingNoteIds = {};
+              notes.forEach(function (note) {
+                existingNoteIds[note.id] = 1;
+              });
+              savedNotes.forEach(function (savedNote) {
+                if (
+                  savedNote &&
+                  savedNote.id &&
+                  savedNote.text &&
+                  !existingNoteIds[savedNote.id]
+                ) {
+                  notes.push({
+                    id: String(savedNote.id),
+                    text: String(savedNote.text),
+                    at: +savedNote.at || Date.now(),
+                  });
+                }
+              });
+              saveTasks();
+              saveNotes();
+              renderTaskList();
+              renderNotes();
+              document.getElementById("msg").textContent =
+                "Restored.";
+            } catch (error) {
+              document.getElementById("msg").textContent =
+                "That text isn’t valid backup data.";
+            }
+          };
+
+        // Theme
+        const root = document.documentElement;
+        let darkTheme = window
+          .matchMedia("(prefers-color-scheme: dark)")
+          .matches;
+
+        try {
+          const savedTheme =
+            localStorage.getItem(THEME_KEY);
+          if (savedTheme) {
+            root.setAttribute("data-theme", savedTheme);
+            darkTheme = savedTheme === "dark";
+          }
+        } catch (error) {
+          // The system theme remains in effect.
+        }
+
+        document.getElementById("theme").onclick =
+          function () {
+            darkTheme = !darkTheme;
+            root.setAttribute(
+              "data-theme",
+              darkTheme ? "dark" : "light",
+            );
+
+            try {
+              localStorage.setItem(
+                THEME_KEY,
+                darkTheme ? "dark" : "light",
+              );
+            } catch (error) {
+              // Theme changes still apply for this session.
+            }
+
+            refreshStarColor();
+            if (prefersReducedMotion) {
+              drawSky(window.performance.now());
+            }
+          };
+
+        const systemThemePreference = window.matchMedia(
+          "(prefers-color-scheme: dark)",
+        );
+        if (systemThemePreference.addEventListener) {
+          systemThemePreference.addEventListener(
+            "change",
+            function () {
+              window.setTimeout(refreshStarColor, 50);
+            },
+          );
+        }
+
+        // Start the app
+        resizeCanvas();
+        tasks = readTasks();
+        notes = readNotes();
+        renderTaskList();
+        renderNotes();
+        window.requestAnimationFrame(animateSky);
+        window.setInterval(function () {
+          renderTaskList();
+          renderNotes();
+        }, 60000);
+      })();
+    </script>
+  </body>
+</html>

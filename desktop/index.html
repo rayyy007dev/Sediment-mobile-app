@@ -1,0 +1,2226 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta
+      name="theme-color"
+      content="#f4ecfa"
+      media="(prefers-color-scheme: light)"
+    />
+    <meta
+      name="theme-color"
+      content="#080919"
+      media="(prefers-color-scheme: dark)"
+    />
+    <title>Sediment</title>
+    <meta
+      name="description"
+      content="A todo app where every finished task becomes a star in your sky."
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500&display=swap"
+    />
+
+    <style>
+      :root {
+        --base: #f4ecfa;
+        --ink: #2a2147;
+        --mute: #7a6e99;
+        --glass: rgba(255, 255, 255, 0.55);
+        --edge: rgba(255, 255, 255, 0.85);
+        --tooltip: rgba(255, 255, 255, 0.85);
+        --balloon-one: #ffb39e;
+        --balloon-two: #bdacff;
+        --balloon-three: #9be7e0;
+        --balloon-opacity: 0.64;
+        --star: #3b2a78;
+
+        --serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+        --sans:
+          "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+        color-scheme: light;
+        box-sizing: border-box;
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --base: #080919;
+          --ink: #f2efff;
+          --mute: #9c99c8;
+          --glass: rgba(255, 255, 255, 0.06);
+          --edge: rgba(255, 255, 255, 0.14);
+          --tooltip: rgba(20, 18, 50, 0.85);
+          --balloon-one: #de52ae;
+          --balloon-two: #6e54f5;
+          --balloon-three: #11b9dc;
+          --balloon-opacity: 0.52;
+          --star: #ffe3b3;
+          color-scheme: dark;
+        }
+      }
+
+      :root[data-theme="dark"] {
+        --base: #080919;
+        --ink: #f2efff;
+        --mute: #9c99c8;
+        --glass: rgba(255, 255, 255, 0.06);
+        --edge: rgba(255, 255, 255, 0.14);
+        --tooltip: rgba(20, 18, 50, 0.85);
+        --balloon-one: #de52ae;
+        --balloon-two: #6e54f5;
+        --balloon-three: #11b9dc;
+        --balloon-opacity: 0.52;
+        --star: #ffe3b3;
+        color-scheme: dark;
+      }
+
+      html {
+        scroll-padding-top: env(safe-area-inset-top, 0px);
+        touch-action: manipulation;
+      }
+
+      * {
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        min-height: 100dvh;
+        margin: 0;
+        background: var(--base);
+        color: var(--ink);
+        font: 400 16px/1.5 var(--sans);
+        -webkit-font-smoothing: antialiased;
+        touch-action: manipulation;
+        overscroll-behavior-y: contain;
+      }
+
+      /* A soft, drifting radial-gradient aurora behind the star canvas. */
+      .aurora {
+        position: fixed;
+        z-index: 0;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+        contain: strict;
+        transform: translateZ(0);
+      }
+
+      .aurora i {
+        position: absolute;
+        border-radius: 50%;
+        opacity: var(--balloon-opacity);
+        animation: drift 34s ease-in-out infinite alternate;
+        will-change: transform;
+      }
+
+      .aurora i:nth-child(1) {
+        width: 111vmax;
+        height: 111vmax;
+        left: -43.5vmax;
+        top: -47.5vmax;
+        background: radial-gradient(
+          circle closest-side,
+          var(--balloon-two) 0%,
+          color-mix(in srgb, var(--balloon-two) 92%, transparent) 32%,
+          color-mix(in srgb, var(--balloon-two) 78%, transparent) 42%,
+          color-mix(in srgb, var(--balloon-two) 60%, transparent) 50%,
+          color-mix(in srgb, var(--balloon-two) 40%, transparent) 58%,
+          color-mix(in srgb, var(--balloon-two) 22%, transparent) 66%,
+          color-mix(in srgb, var(--balloon-two) 9%, transparent) 74%,
+          color-mix(in srgb, var(--balloon-two) 2%, transparent) 84%,
+          transparent 96%
+        );
+      }
+
+      .aurora i:nth-child(2) {
+        width: 101vmax;
+        height: 101vmax;
+        right: -43.5vmax;
+        top: calc(8vh - 25.5vmax);
+        background: radial-gradient(
+          circle closest-side,
+          var(--balloon-one) 0%,
+          color-mix(in srgb, var(--balloon-one) 85%, transparent) 32%,
+          color-mix(in srgb, var(--balloon-one) 67%, transparent) 42%,
+          color-mix(in srgb, var(--balloon-one) 49%, transparent) 50%,
+          color-mix(in srgb, var(--balloon-one) 31%, transparent) 58%,
+          color-mix(in srgb, var(--balloon-one) 16%, transparent) 66%,
+          color-mix(in srgb, var(--balloon-one) 7%, transparent) 74%,
+          color-mix(in srgb, var(--balloon-one) 2%, transparent) 84%,
+          transparent 96%
+        );
+        animation-duration: 42s;
+      }
+
+      .aurora i:nth-child(3) {
+        width: 106vmax;
+        height: 106vmax;
+        left: calc(18vw - 25.5vmax);
+        bottom: -57.5vmax;
+        background: radial-gradient(
+          circle closest-side,
+          var(--balloon-three) 0%,
+          color-mix(in srgb, var(--balloon-three) 89%, transparent) 32%,
+          color-mix(in srgb, var(--balloon-three) 73%, transparent) 42%,
+          color-mix(in srgb, var(--balloon-three) 55%, transparent) 50%,
+          color-mix(in srgb, var(--balloon-three) 35%, transparent) 58%,
+          color-mix(in srgb, var(--balloon-three) 19%, transparent) 66%,
+          color-mix(in srgb, var(--balloon-three) 8%, transparent) 74%,
+          color-mix(in srgb, var(--balloon-three) 2%, transparent) 84%,
+          transparent 96%
+        );
+        animation-duration: 50s;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) .aurora i:nth-child(2) {
+          z-index: 1;
+          opacity: 0.56;
+        }
+        :root:not([data-theme="light"]) .aurora i:nth-child(1),
+        :root:not([data-theme="light"]) .aurora i:nth-child(3) {
+          opacity: 0.52;
+        }
+      }
+
+      :root[data-theme="dark"] .aurora i:nth-child(2) {
+        z-index: 1;
+        opacity: 0.56;
+      }
+
+      :root[data-theme="dark"] .aurora i:nth-child(1),
+      :root[data-theme="dark"] .aurora i:nth-child(3) {
+        opacity: 0.52;
+      }
+
+      body.scrolling .aurora i {
+        animation-play-state: paused;
+      }
+
+      @keyframes drift {
+        to {
+          transform: translate(7vw, -5vh) scale(1.12);
+        }
+      }
+
+      /* Subtle paper-like grain behind the foreground. */
+      body::after {
+        content: "";
+        position: fixed;
+        z-index: 0;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.05;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+      }
+
+      #sky {
+        position: fixed;
+        z-index: 1;
+        inset: 0;
+        contain: strict;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+
+      main {
+        position: relative;
+        z-index: 2;
+        flex: 1 0 auto;
+        width: 100%;
+        max-width: 580px;
+        margin: 0 auto;
+        padding: 13vh max(22px, env(safe-area-inset-right, 0px)) 44px
+          max(22px, env(safe-area-inset-left, 0px));
+        pointer-events: none;
+        transition: opacity 0.35s;
+      }
+
+      header {
+        margin-bottom: 40px;
+      }
+
+      h1 {
+        margin: 0 0 16px;
+        font: 400 clamp(52px, 10vw, 92px)/0.95 var(--serif);
+        letter-spacing: -0.025em;
+      }
+
+      .sub {
+        max-width: 420px;
+        margin: 0;
+        color: var(--mute);
+        font-size: 17px;
+      }
+
+      .glass {
+        pointer-events: auto;
+        background: var(--glass);
+        border: 1px solid var(--edge);
+        backdrop-filter: blur(22px) saturate(150%);
+        -webkit-backdrop-filter: blur(22px) saturate(150%);
+        box-shadow: 0 18px 50px -24px rgba(20, 10, 60, 0.45);
+      }
+
+      .add-task {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 8px 8px 28px;
+        border-radius: 40px;
+        transition: box-shadow 0.25s;
+      }
+
+      .add-task:focus-within {
+        box-shadow:
+          0 0 0 4px color-mix(in srgb, var(--balloon-two) 35%, transparent),
+          0 18px 50px -24px rgba(20, 10, 60, 0.45);
+      }
+
+      .add-task input {
+        flex: 1;
+        min-width: 0;
+        padding: 14px 0;
+        border: 0;
+        outline: none;
+        background: none;
+        color: var(--ink);
+        font: inherit;
+        font-size: 19px;
+      }
+
+      .add-task input::placeholder {
+        color: var(--mute);
+      }
+
+      .add-task button {
+        flex: none;
+        width: 48px;
+        height: 48px;
+        border: 0;
+        border-radius: 50%;
+        background: linear-gradient(
+          135deg,
+          var(--balloon-two),
+          var(--balloon-one)
+        );
+        color: #fff;
+        cursor: pointer;
+        font: 300 28px/1 var(--sans);
+        transition: transform 0.2s;
+      }
+
+      .add-task button:hover {
+        transform: rotate(90deg) scale(1.06);
+      }
+
+      ul {
+        margin: 22px 0 0;
+        padding: 0;
+        list-style: none;
+        pointer-events: none;
+      }
+
+      li.open-task {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        margin-bottom: 10px;
+        padding: 18px 22px;
+        border-radius: 24px;
+        contain: layout style;
+      }
+
+      .finish-button {
+        flex: none;
+        width: 26px;
+        height: 26px;
+        padding: 0;
+        border: 1.5px solid var(--mute);
+        border-radius: 50%;
+        background: none;
+        cursor: pointer;
+        transition:
+          transform 0.15s,
+          background 0.2s,
+          border-color 0.2s;
+      }
+
+      .finish-button:hover {
+        border-color: transparent;
+        background: linear-gradient(
+          135deg,
+          var(--balloon-two),
+          var(--balloon-one)
+        );
+        box-shadow: 0 0 18px
+          color-mix(in srgb, var(--balloon-one) 60%, transparent);
+      }
+
+      .task-text {
+        flex: 1;
+        min-width: 0;
+        font-size: 19px;
+        word-break: break-word;
+        cursor: text;
+      }
+
+      .task-editor {
+        flex: 1;
+        min-width: 0;
+        padding: 0;
+        border: 0;
+        border-bottom: 1px solid var(--balloon-two);
+        outline: none;
+        background: none;
+        color: var(--ink);
+        font: inherit;
+        font-size: 19px;
+      }
+
+      .task-age {
+        flex: none;
+        color: var(--mute);
+        font-size: 13px;
+        white-space: nowrap;
+      }
+
+      li.finished-animation {
+        animation: finish 0.55s ease forwards;
+      }
+
+      @keyframes finish {
+        to {
+          opacity: 0;
+          transform: translateY(-30px) scale(0.96);
+          filter: blur(8px);
+        }
+      }
+
+      .empty-state {
+        padding: 24px 8px;
+        color: var(--mute);
+        font: italic 400 24px/1.3 var(--serif);
+        pointer-events: none;
+      }
+
+      .archive {
+        margin-top: 34px;
+        padding: 16px 22px;
+        border-radius: 24px;
+        contain: layout style;
+      }
+
+      .archive + .archive {
+        margin-top: 12px;
+      }
+
+      summary {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--mute);
+        font-size: 14px;
+        list-style: none;
+        cursor: pointer;
+      }
+
+      summary::-webkit-details-marker {
+        display: none;
+      }
+
+      summary::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        border-right: 1.5px solid currentColor;
+        border-bottom: 1.5px solid currentColor;
+        transform: rotate(-45deg);
+        transition: transform 0.2s;
+      }
+
+      details[open] > summary::before {
+        transform: rotate(45deg);
+      }
+
+      .archive ul {
+        margin: 14px 0 0;
+      }
+
+      li.archived-task {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 9px 0;
+        border-top: 1px solid var(--edge);
+        color: var(--mute);
+        pointer-events: auto;
+      }
+
+      li.archived-task .task-text {
+        font-size: 16px;
+        cursor: default;
+      }
+
+      .star-mark {
+        flex: none;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--star);
+        box-shadow: 0 0 10px var(--star);
+      }
+
+      .text-button {
+        padding: 2px;
+        border: 0;
+        background: none;
+        color: var(--mute);
+        cursor: pointer;
+        font: inherit;
+        font-size: 13px;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
+
+      .text-button:hover {
+        color: var(--ink);
+      }
+
+      .text-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .text-button.danger {
+        color: color-mix(in srgb, var(--balloon-one) 55%, var(--ink));
+      }
+
+      .backup {
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid var(--edge);
+      }
+
+      textarea {
+        display: block;
+        width: 100%;
+        min-height: 110px;
+        margin-top: 14px;
+        padding: 12px 14px;
+        border: 1px solid var(--edge);
+        border-radius: 14px;
+        outline: none;
+        background: transparent;
+        color: var(--ink);
+        font: 16px/1.5 var(--sans);
+        resize: vertical;
+      }
+
+      textarea:focus {
+        border-color: var(--balloon-two);
+        box-shadow: 0 0 0 3px
+          color-mix(in srgb, var(--balloon-two) 30%, transparent);
+      }
+
+      textarea::placeholder {
+        color: var(--mute);
+      }
+
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px 16px;
+        margin-top: 8px;
+      }
+
+      .msg {
+        color: var(--mute);
+        font-size: 13px;
+      }
+
+      .backup-message {
+        margin: 10px 0 0;
+      }
+
+      .confirm-bar {
+        margin-top: 12px;
+        padding: 12px 14px;
+        border: 1px solid var(--edge);
+        border-radius: 14px;
+        background: color-mix(in srgb, var(--balloon-one) 10%, transparent);
+      }
+
+      .confirm-bar .msg {
+        display: block;
+        color: var(--ink);
+        line-height: 1.45;
+      }
+
+      .note {
+        max-width: 470px;
+        margin: 22px 0 0;
+      }
+
+      .note .quote {
+        display: -webkit-box;
+        -webkit-line-clamp: 4;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        font: italic 400 24px/1.3 var(--serif);
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .note small {
+        display: block;
+        margin-top: 8px;
+        color: var(--mute);
+        font-size: 13px;
+      }
+
+      .note-list {
+        max-height: 230px;
+        overflow: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 14px 0 0;
+        pointer-events: auto;
+      }
+
+      .note-list:empty {
+        display: none;
+      }
+
+      .note-list li {
+        padding: 12px 0;
+        border-top: 1px solid var(--edge);
+        pointer-events: auto;
+      }
+
+      .note-list li b {
+        display: block;
+        color: var(--ink);
+        font: 400 18px/1.35 var(--serif);
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .note-list li small {
+        color: var(--mute);
+        font-size: 12px;
+      }
+
+      .theme-button {
+        position: fixed;
+        z-index: 6;
+        top: calc(18px + env(safe-area-inset-top, 0px));
+        right: 20px;
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        border-radius: 50%;
+        color: var(--ink);
+        cursor: pointer;
+        font-size: 16px;
+        transition: transform 0.12s;
+      }
+
+      .sky-button {
+        position: fixed;
+        z-index: 6;
+        right: 20px;
+        bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+        height: 44px;
+        padding: 0 18px;
+        border-radius: 22px;
+        color: var(--ink);
+        cursor: pointer;
+        font: 500 14px var(--sans);
+        transition: transform 0.12s;
+      }
+
+      .foot {
+        position: relative;
+        z-index: 2;
+        width: 100%;
+        padding: 0 max(22px, env(safe-area-inset-right, 0px))
+          calc(20px + env(safe-area-inset-bottom, 0px))
+          max(22px, env(safe-area-inset-left, 0px));
+        pointer-events: none;
+      }
+
+      .hint {
+        max-width: calc(100% - 116px);
+        margin: 0;
+        color: var(--mute);
+        font-size: 13px;
+      }
+
+      body.sky main {
+        opacity: 0;
+      }
+
+      body.sky main .glass,
+      body.sky main .glass * {
+        pointer-events: none;
+      }
+
+      body.sky .foot {
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 2;
+      }
+
+      body.sky .hint {
+        display: block;
+      }
+
+      #tip {
+        position: fixed;
+        z-index: 5;
+        display: none;
+        max-width: 260px;
+        padding: 12px 16px;
+        border: 1px solid var(--edge);
+        border-radius: 16px;
+        background: var(--tooltip);
+        box-shadow: 0 14px 40px -12px rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        transform: translate(-50%, -100%);
+        pointer-events: none;
+      }
+
+      #tip.below {
+        transform: translate(-50%, 0);
+      }
+
+      #tip.pin {
+        pointer-events: auto;
+      }
+
+      #tip b {
+        display: block;
+        font: 400 20px/1.2 var(--serif);
+        word-break: break-word;
+      }
+
+      #tip small {
+        color: var(--mute);
+        font-size: 12px;
+      }
+
+      #tip .text-button {
+        display: block;
+        margin-top: 6px;
+        padding: 0;
+      }
+
+      .finish-button:focus-visible,
+      .theme-button:focus-visible,
+      .sky-button:focus-visible,
+      .add-task button:focus-visible,
+      .text-button:focus-visible,
+      summary:focus-visible {
+        outline: 2px solid var(--balloon-two);
+        outline-offset: 3px;
+      }
+
+      button {
+        touch-action: manipulation;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+
+      button:active {
+        transform: scale(0.95);
+      }
+
+      .add-task button:active {
+        transform: scale(0.92);
+      }
+
+      @media (max-width: 760px) {
+        .theme-button {
+          position: absolute;
+          top: calc(14px + env(safe-area-inset-top, 0px));
+          right: 14px;
+        }
+        body.sky .theme-button {
+          position: fixed;
+        }
+        main {
+          padding-top: max(9vh, calc(74px + env(safe-area-inset-top, 0px)));
+          padding-bottom: 64px;
+        }
+      }
+
+      @media (max-width: 640px) {
+        main {
+          padding-top: max(9vh, calc(74px + env(safe-area-inset-top, 0px)));
+          padding-bottom: 56px;
+        }
+        header {
+          margin-bottom: 28px;
+        }
+        h1 {
+          font-size: clamp(44px, 14vw, 60px);
+        }
+        .sub {
+          font-size: 16px;
+        }
+        .note .quote {
+          font-size: 21px;
+        }
+        .add-task {
+          padding: 6px 6px 6px 22px;
+        }
+        .add-task input {
+          font-size: 18px;
+        }
+        li.open-task {
+          gap: 14px;
+          padding: 16px 18px;
+        }
+        .task-age {
+          display: none;
+        }
+        .archive {
+          padding: 14px 18px;
+        }
+        .backup .row {
+          gap: 6px 14px;
+        }
+        .glass {
+          backdrop-filter: saturate(125%);
+          -webkit-backdrop-filter: saturate(125%);
+          box-shadow: 0 10px 26px -16px rgba(20, 10, 60, 0.32);
+        }
+        .foot {
+          padding: 0 max(18px, env(safe-area-inset-right, 0px))
+            calc(24px + env(safe-area-inset-bottom, 0px))
+            max(18px, env(safe-area-inset-left, 0px));
+        }
+        .hint {
+          max-width: calc(100% - 112px);
+          line-height: 1.4;
+        }
+        .sky-button {
+          right: 14px;
+        }
+      }
+
+      @media (pointer: coarse) {
+        .finish-button {
+          position: relative;
+          width: 30px;
+          height: 30px;
+        }
+        .finish-button::after {
+          content: "";
+          position: absolute;
+          inset: -10px;
+        }
+        .text-button {
+          padding: 10px 6px;
+          font-size: 14px;
+        }
+        .theme-button {
+          width: 44px;
+          height: 44px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          animation: none !important;
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="aurora" aria-hidden="true">
+      <i></i><i></i><i></i>
+    </div>
+
+    <canvas id="sky"></canvas>
+
+    <button
+      class="glass theme-button"
+      id="theme"
+      title="Switch light or dark"
+      aria-label="Switch light or dark"
+    >
+      ◐
+    </button>
+    <button class="glass sky-button" id="skyBtn" aria-pressed="false" hidden>
+      ✦ Sky
+    </button>
+
+    <main>
+      <header>
+        <h1 id="hello">Hello.</h1>
+        <p class="sub" id="sub"></p>
+        <p class="note" id="note" hidden></p>
+      </header>
+
+      <div class="glass add-task">
+        <input
+          id="in"
+          type="text"
+          placeholder="Add something…"
+          autocomplete="off"
+          aria-label="New task"
+        />
+        <button id="addBtn" aria-label="Add task">+</button>
+      </div>
+
+      <ul id="open"></ul>
+
+      <details class="glass archive" id="noteWrap" open>
+        <summary id="noteSum">Note to tomorrow</summary>
+        <textarea
+          id="noteBox"
+          spellcheck="false"
+          maxlength="600"
+          aria-label="Note to tomorrow"
+          placeholder="What should tomorrow-you remember, finish or feel?"
+        ></textarea>
+        <div class="row">
+          <button class="text-button" id="leaveNote">Leave note</button>
+          <span class="msg" id="noteMsg"
+            >It greets you here tomorrow. Ctrl+Enter also works.</span
+          >
+        </div>
+        <ul class="note-list" id="notes"></ul>
+      </details>
+
+      <details class="glass archive" id="archWrap">
+        <summary id="archSum"></summary>
+        <ul id="done"></ul>
+
+        <div class="backup">
+          <div class="row backup-actions">
+            <button class="text-button" id="copy">Copy backup</button>
+            <button class="text-button" id="save">Save backup</button>
+            <button class="text-button" id="clearDone" disabled>
+              Delete completed
+            </button>
+            <button class="text-button" id="restoreBtn">Restore backup</button>
+          </div>
+
+          <div class="confirm-bar" id="clearConfirm" hidden>
+            <span class="msg" id="clearPrompt"></span>
+            <div class="row">
+              <button class="text-button danger" id="clearYes">
+                Yes, delete
+              </button>
+              <button class="text-button" id="clearNo">Cancel</button>
+            </div>
+          </div>
+
+          <p class="msg backup-message" id="msg">
+            A backup holds your tasks and notes.
+          </p>
+
+          <div id="restoreBox" hidden>
+            <textarea
+              id="restoreText"
+              spellcheck="false"
+              aria-label="Paste backup"
+              placeholder="Paste your backup text here."
+            ></textarea>
+            <div class="row">
+              <button class="text-button" id="restoreGo">Restore now</button>
+              <button class="text-button" id="restoreCancel">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </details>
+    </main>
+
+    <div id="tip">
+      <b id="tipText"></b>
+      <small id="tipDate"></small>
+      <button class="text-button" id="reopen">Reopen task</button>
+    </div>
+
+    <footer class="foot"><p class="hint" id="hint"></p></footer>
+
+    <script>
+      (function () {
+        "use strict";
+
+        const STORAGE_KEY = "sediment.v1";
+        const NOTES_KEY = STORAGE_KEY + ".notes";
+        const DRAFT_KEY = STORAGE_KEY + ".draft";
+        const THEME_KEY = STORAGE_KEY + ".theme";
+
+        const prefersReducedMotion = window.matchMedia(
+          "(prefers-reduced-motion: reduce)",
+        ).matches;
+        const isCoarsePointer = window.matchMedia("(pointer: coarse)").matches;
+
+        let tasks = [];
+        let notes = [];
+        let memoryBackup = null;
+        let notesMemoryBackup = null;
+        let hoveredTaskId = null;
+        let pinnedTaskId = null;
+        let starColor = "#fff";
+        let ready = false;
+
+        const starPositions = {};
+        const skyCanvas = document.getElementById("sky");
+        const canvasContext = skyCanvas.getContext("2d");
+        const glowCanvas = document.createElement("canvas");
+        const glowSize = 48;
+        glowCanvas.width = glowCanvas.height = glowSize;
+
+        let canvasWidth = 0;
+        let canvasHeight = 0;
+        let isScrolling = false;
+        let scrollTimer = 0;
+        let lastFrameTime = 0;
+        let hasBloomingStar = false;
+
+        // Storage
+        function readTasks() {
+          try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            const parsed = raw ? JSON.parse(raw) : null;
+            if (Array.isArray(parsed)) {
+              return parsed;
+            }
+          } catch (error) {
+            // Storage can be unavailable while the app is open.
+          }
+
+          try {
+            const fallback = memoryBackup ? JSON.parse(memoryBackup) : null;
+            if (Array.isArray(fallback)) {
+              return fallback;
+            }
+          } catch (error) {
+            // Ignore corrupted in-memory fallback.
+          }
+
+          return [];
+        }
+
+        function saveTasks() {
+          const serializedTasks = JSON.stringify(tasks);
+          memoryBackup = serializedTasks;
+
+          try {
+            localStorage.setItem(STORAGE_KEY, serializedTasks);
+          } catch (error) {
+            // The in-memory backup keeps the session usable.
+          }
+        }
+
+        function readNotes() {
+          try {
+            const raw = localStorage.getItem(NOTES_KEY);
+            const parsed = raw ? JSON.parse(raw) : null;
+            if (Array.isArray(parsed)) {
+              return parsed;
+            }
+          } catch (error) {
+            // Notes remain available for the current session.
+          }
+
+          try {
+            const fallback = notesMemoryBackup
+              ? JSON.parse(notesMemoryBackup)
+              : null;
+            if (Array.isArray(fallback)) {
+              return fallback;
+            }
+          } catch (error) {
+            // Ignore corrupted in-memory fallback.
+          }
+
+          return [];
+        }
+
+        function saveNotes() {
+          const serializedNotes = JSON.stringify(notes);
+          notesMemoryBackup = serializedNotes;
+
+          try {
+            localStorage.setItem(NOTES_KEY, serializedNotes);
+          } catch (error) {
+            // Notes remain available for the current session.
+          }
+        }
+
+        try {
+          if (navigator.storage && navigator.storage.persist) {
+            navigator.storage.persist();
+          }
+        } catch (error) {
+          // Persistent storage is optional.
+        }
+
+        // Helpers
+        function createTaskId() {
+          return (
+            Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
+          );
+        }
+
+        function hashText(text) {
+          let hash = 2166136261;
+
+          for (let index = 0; index < text.length; index += 1) {
+            hash ^= text.charCodeAt(index);
+            hash = Math.imul(hash, 16777619);
+          }
+
+          return hash >>> 0;
+        }
+
+        function createRandomGenerator(seed) {
+          return function () {
+            seed |= 0;
+            seed = (seed + 0x6d2b79f5) | 0;
+
+            let value = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+            value =
+              (value + Math.imul(value ^ (value >>> 7), 61 | value)) ^ value;
+
+            return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+          };
+        }
+
+        function describeAge(timestamp) {
+          const minutes = Math.floor((Date.now() - timestamp) / 60000);
+
+          if (minutes < 1) {
+            return "just now";
+          }
+          if (minutes < 60) {
+            return minutes + " min ago";
+          }
+
+          const hours = Math.floor(minutes / 60);
+          if (hours < 24) {
+            return hours + (hours === 1 ? " hour ago" : " hours ago");
+          }
+
+          const days = Math.floor(hours / 24);
+          return days + (days === 1 ? " day ago" : " days ago");
+        }
+
+        function formatCompletionDate(timestamp) {
+          return new Date(timestamp).toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+          });
+        }
+
+        function calendarDayDiff(timestamp) {
+          const then = new Date(timestamp);
+          const today = new Date();
+          then.setHours(0, 0, 0, 0);
+          today.setHours(0, 0, 0, 0);
+          return Math.round((today - then) / 86400000);
+        }
+
+        function describeNoteAge(timestamp) {
+          const diff = calendarDayDiff(timestamp);
+          if (diff <= 0) {
+            return "earlier today";
+          }
+          if (diff === 1) {
+            return "yesterday";
+          }
+          return diff + " days ago";
+        }
+
+        function parseTimestamp(value, fallback) {
+          if (typeof value === "number" && isFinite(value) && value > 0) {
+            return value;
+          }
+          const numeric = Number(value);
+          if (isFinite(numeric) && numeric > 0) {
+            return numeric;
+          }
+          if (typeof value === "string") {
+            const parsed = Date.parse(value);
+            if (isFinite(parsed) && parsed > 0) {
+              return parsed;
+            }
+          }
+          return fallback;
+        }
+
+        function getFinishedTasks() {
+          return tasks
+            .filter(function (task) {
+              return task.done;
+            })
+            .sort(function (first, second) {
+              return first.done - second.done;
+            });
+        }
+
+        // Sky canvas
+        function createBackgroundDust() {
+          const random = createRandomGenerator(7);
+          const dust = [];
+
+          for (let index = 0; index < 150; index += 1) {
+            dust.push({
+              x: random(),
+              y: random(),
+              size: 0.4 + random() * 0.9,
+              phase: random() * 6.28,
+            });
+          }
+
+          return dust;
+        }
+
+        const backgroundDust = createBackgroundDust();
+
+        function buildGlowSprite() {
+          const glowContext = glowCanvas.getContext("2d");
+          const center = glowSize / 2;
+          const gradient = glowContext.createRadialGradient(
+            center,
+            center,
+            0,
+            center,
+            center,
+            center,
+          );
+
+          glowContext.clearRect(0, 0, glowSize, glowSize);
+          gradient.addColorStop(0, starColor);
+          gradient.addColorStop(0.28, starColor);
+          gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
+
+          glowContext.globalAlpha = 0.45;
+          glowContext.fillStyle = gradient;
+          glowContext.beginPath();
+          glowContext.arc(center, center, center, 0, 6.283);
+          glowContext.fill();
+          glowContext.globalAlpha = 1;
+        }
+
+        function resizeCanvas() {
+          const pixelDensity = Math.min(window.devicePixelRatio || 1, 2);
+
+          canvasWidth = window.innerWidth;
+          canvasHeight = window.innerHeight;
+          skyCanvas.width = canvasWidth * pixelDensity;
+          skyCanvas.height = canvasHeight * pixelDensity;
+          skyCanvas.style.width = canvasWidth + "px";
+          skyCanvas.style.height = canvasHeight + "px";
+          canvasContext.setTransform(
+            pixelDensity,
+            0,
+            0,
+            pixelDensity,
+            0,
+            0,
+          );
+
+          if (ready) {
+            drawSky(window.performance.now());
+          }
+        }
+
+        function refreshStarColor() {
+          const cssColor = getComputedStyle(
+            document.documentElement,
+          ).getPropertyValue("--star");
+          starColor = cssColor.trim() || "#fff";
+          buildGlowSprite();
+        }
+
+        function getStarPosition(task) {
+          if (!starPositions[task.id]) {
+            const random = createRandomGenerator(hashText(task.id));
+
+            starPositions[task.id] = {
+              x: 0.06 + 0.88 * random(),
+              y: 0.09 + 0.8 * random(),
+              size: 2.4 + random() * 2.2,
+              phase: random() * 6.28,
+            };
+          }
+
+          return starPositions[task.id];
+        }
+
+        function drawSky(timestamp) {
+          canvasContext.clearRect(0, 0, canvasWidth, canvasHeight);
+          canvasContext.fillStyle = starColor;
+          canvasContext.strokeStyle = starColor;
+
+          // Dim, slowly twinkling background particles
+          backgroundDust.forEach(function (particle) {
+            canvasContext.globalAlpha =
+              0.12 +
+              0.22 *
+                (0.5 + 0.5 * Math.sin(timestamp * 0.0008 + particle.phase));
+            canvasContext.beginPath();
+            canvasContext.arc(
+              particle.x * canvasWidth,
+              particle.y * canvasHeight,
+              particle.size,
+              0,
+              6.283,
+            );
+            canvasContext.fill();
+          });
+
+          const finishedTasks = getFinishedTasks();
+          const now = Date.now();
+          let blooming = false;
+
+          // Draw the constellation line.
+          canvasContext.globalAlpha = 0.17;
+          canvasContext.lineWidth = 1;
+          canvasContext.beginPath();
+
+          finishedTasks.forEach(function (task, index) {
+            const position = getStarPosition(task);
+            if (index === 0) {
+              canvasContext.moveTo(
+                position.x * canvasWidth,
+                position.y * canvasHeight,
+              );
+            } else {
+              canvasContext.lineTo(
+                position.x * canvasWidth,
+                position.y * canvasHeight,
+              );
+            }
+          });
+          canvasContext.stroke();
+
+          // Draw each finished task as a star with pre-rendered radial glow.
+          finishedTasks.forEach(function (task) {
+            const position = getStarPosition(task);
+            const taskAge = now - task.done;
+            const newStarBoost =
+              taskAge < 2500 ? 1 + 3 * Math.exp(-taskAge / 500) : 1;
+            const radius = position.size * newStarBoost;
+            const glowRadius = radius * 4.5;
+
+            if (taskAge < 2500) {
+              blooming = true;
+            }
+
+            canvasContext.globalAlpha =
+              0.82 + 0.18 * Math.sin(timestamp * 0.002 + position.phase);
+            canvasContext.drawImage(
+              glowCanvas,
+              position.x * canvasWidth - glowRadius,
+              position.y * canvasHeight - glowRadius,
+              glowRadius * 2,
+              glowRadius * 2,
+            );
+            canvasContext.beginPath();
+            canvasContext.arc(
+              position.x * canvasWidth,
+              position.y * canvasHeight,
+              radius,
+              0,
+              6.283,
+            );
+            canvasContext.fill();
+          });
+
+          // Highlight the hovered or pinned star.
+          const highlightedTaskId = pinnedTaskId || hoveredTaskId;
+          if (highlightedTaskId) {
+            const highlightedTask = tasks.find(function (task) {
+              return task.id === highlightedTaskId;
+            });
+
+            if (highlightedTask && highlightedTask.done) {
+              const position = getStarPosition(highlightedTask);
+
+              canvasContext.globalAlpha = 0.6;
+              canvasContext.lineWidth = 1.2;
+              canvasContext.beginPath();
+              canvasContext.arc(
+                position.x * canvasWidth,
+                position.y * canvasHeight,
+                position.size + 8,
+                0,
+                6.283,
+              );
+              canvasContext.stroke();
+            }
+          }
+
+          canvasContext.globalAlpha = 1;
+          return blooming;
+        }
+
+        function animateSky(timestamp) {
+          const step = hasBloomingStar
+            ? 24
+            : document.body.classList.contains("sky")
+              ? 34
+              : 80;
+
+          if (!isScrolling && timestamp - lastFrameTime >= step) {
+            lastFrameTime = timestamp;
+            hasBloomingStar = drawSky(timestamp);
+          }
+
+          if (!prefersReducedMotion) {
+            window.requestAnimationFrame(animateSky);
+          }
+        }
+
+        window.addEventListener(
+          "scroll",
+          function () {
+            if (!isScrolling) {
+              isScrolling = true;
+              document.body.classList.add("scrolling");
+            }
+            window.clearTimeout(scrollTimer);
+            scrollTimer = window.setTimeout(function () {
+              isScrolling = false;
+              document.body.classList.remove("scrolling");
+            }, 140);
+          },
+          { passive: true, capture: true },
+        );
+
+        // Star hover and tooltip behavior
+        function findStarAtPoint(mouseX, mouseY) {
+          let closestTask = null;
+          let closestDistance = isCoarsePointer ? 30 : 18;
+
+          getFinishedTasks().forEach(function (task) {
+            const position = getStarPosition(task);
+            const distance = Math.hypot(
+              position.x * canvasWidth - mouseX,
+              position.y * canvasHeight - mouseY,
+            );
+
+            if (distance < closestDistance) {
+              closestDistance = distance;
+              closestTask = task;
+            }
+          });
+
+          return closestTask;
+        }
+
+        function showStarTooltip(task, pinned) {
+          const position = getStarPosition(task);
+          const tooltip = document.getElementById("tip");
+          const tooltipY = position.y * canvasHeight;
+          const placeBelow = tooltipY < 110;
+
+          document.getElementById("tipText").textContent = task.text;
+          document.getElementById("tipDate").textContent =
+            "Finished " + formatCompletionDate(task.done);
+          document.getElementById("reopen").style.display = pinned
+            ? ""
+            : "none";
+
+          tooltip.className =
+            (pinned ? "pin " : "") + (placeBelow ? "below" : "");
+          tooltip.style.left =
+            Math.min(
+              Math.max(position.x * canvasWidth, 140),
+              Math.max(140, canvasWidth - 140),
+            ) + "px";
+          tooltip.style.top =
+            (placeBelow ? tooltipY + 16 : tooltipY - 16) + "px";
+          tooltip.style.display = "block";
+
+          if (!placeBelow && tooltipY - 16 - tooltip.offsetHeight < 12) {
+            tooltip.className = (pinned ? "pin " : "") + "below";
+            tooltip.style.top = tooltipY + 16 + "px";
+          }
+        }
+
+        function hideStarTooltip() {
+          document.getElementById("tip").style.display = "none";
+        }
+
+        function eventTargetsGlass(event) {
+          return (
+            event.target.closest && event.target.closest(".glass,#tip")
+          );
+        }
+
+        window.addEventListener("mousemove", function (event) {
+          if (eventTargetsGlass(event)) {
+            hoveredTaskId = null;
+            document.body.style.cursor = "";
+            if (!pinnedTaskId) {
+              hideStarTooltip();
+            }
+            return;
+          }
+
+          const task = findStarAtPoint(event.clientX, event.clientY);
+          hoveredTaskId = task ? task.id : null;
+          document.body.style.cursor = task ? "pointer" : "";
+
+          if (!pinnedTaskId) {
+            if (task) {
+              showStarTooltip(task, false);
+            } else {
+              hideStarTooltip();
+            }
+          }
+        });
+
+        window.addEventListener("click", function (event) {
+          if (eventTargetsGlass(event)) {
+            return;
+          }
+
+          const task = findStarAtPoint(event.clientX, event.clientY);
+          if (task) {
+            pinnedTaskId = task.id;
+            showStarTooltip(task, true);
+          } else {
+            pinnedTaskId = null;
+            hideStarTooltip();
+          }
+        });
+
+        window.addEventListener("keydown", function (event) {
+          if (event.key === "Escape") {
+            pinnedTaskId = null;
+            hideStarTooltip();
+            document.getElementById("clearConfirm").hidden = true;
+          }
+
+          const editingTextField = /INPUT|TEXTAREA/.test(
+            document.activeElement.tagName,
+          );
+          if (event.key === "/" && !editingTextField) {
+            event.preventDefault();
+            document.getElementById("in").focus();
+          }
+        });
+
+        let resizeTimer = 0;
+        window.addEventListener("resize", function () {
+          window.clearTimeout(resizeTimer);
+          resizeTimer = window.setTimeout(function () {
+            resizeCanvas();
+            if (pinnedTaskId) {
+              const pinnedTask = tasks.find(function (candidate) {
+                return candidate.id === pinnedTaskId;
+              });
+              if (pinnedTask && pinnedTask.done) {
+                showStarTooltip(pinnedTask, true);
+              } else {
+                pinnedTaskId = null;
+                hideStarTooltip();
+              }
+            }
+          }, 120);
+        });
+
+        // Task operations
+        function addTask(text) {
+          text = text.trim();
+          if (!text) {
+            return;
+          }
+
+          tasks.unshift({
+            id: createTaskId(),
+            text: text,
+            created: Date.now(),
+            done: null,
+          });
+
+          saveTasks();
+          renderTaskList();
+        }
+
+        function finishTask(taskId, listItem) {
+          if (listItem.dataset.settling) {
+            return;
+          }
+          listItem.dataset.settling = "1";
+          listItem.classList.add("finished-animation");
+
+          window.setTimeout(function () {
+            const task = tasks.find(function (candidate) {
+              return candidate.id === taskId;
+            });
+
+            if (task) {
+              task.done = Date.now();
+            }
+
+            saveTasks();
+            renderTaskList();
+          }, 520);
+        }
+
+        function reopenTask(taskId) {
+          const task = tasks.find(function (candidate) {
+            return candidate.id === taskId;
+          });
+
+          if (task) {
+            task.done = null;
+            task.created = Date.now();
+          }
+
+          if (pinnedTaskId === taskId) {
+            pinnedTaskId = null;
+            hideStarTooltip();
+          }
+
+          saveTasks();
+          renderTaskList();
+        }
+
+        function editTask(taskId, textElement, listItem) {
+          if (listItem && listItem.classList.contains("finished-animation")) {
+            return;
+          }
+
+          const task = tasks.find(function (candidate) {
+            return candidate.id === taskId;
+          });
+          if (!task) {
+            return;
+          }
+
+          const textInput = document.createElement("input");
+          let finishedEditing = false;
+
+          textInput.className = "task-editor";
+          textInput.value = task.text;
+          textElement.replaceWith(textInput);
+          textInput.focus();
+          textInput.select();
+
+          function finishEditing(saveChanges) {
+            if (finishedEditing) {
+              return;
+            }
+            finishedEditing = true;
+
+            if (saveChanges && textInput.value.trim()) {
+              task.text = textInput.value.trim();
+              saveTasks();
+            }
+
+            renderTaskList();
+          }
+
+          textInput.addEventListener("keydown", function (event) {
+            if (event.key === "Enter") {
+              finishEditing(true);
+            }
+            if (event.key === "Escape") {
+              finishEditing(false);
+            }
+          });
+
+          textInput.addEventListener("blur", function () {
+            finishEditing(true);
+          });
+        }
+
+        // Task list rendering
+        function renderTaskList() {
+          refreshStarColor();
+
+          const openTasks = tasks.filter(function (task) {
+            return !task.done;
+          });
+          const finishedTasks = getFinishedTasks().reverse();
+          const finishedCount = finishedTasks.length;
+          const currentHour = new Date().getHours();
+
+          if (currentHour < 5) {
+            document.getElementById("hello").textContent = "Still up?";
+          } else if (currentHour < 12) {
+            document.getElementById("hello").textContent = "Good morning.";
+          } else if (currentHour < 18) {
+            document.getElementById("hello").textContent = "Good afternoon.";
+          } else {
+            document.getElementById("hello").textContent = "Good evening.";
+          }
+
+          if (!openTasks.length && !finishedCount) {
+            document.getElementById("sub").textContent =
+              "The sky is empty. Every task you finish becomes a star.";
+          } else if (!openTasks.length) {
+            document.getElementById("sub").textContent =
+              "Nothing left to do. " +
+              finishedCount +
+              (finishedCount === 1 ? " star" : " stars") +
+              " and counting.";
+          } else {
+            document.getElementById("sub").textContent =
+              openTasks.length +
+              (openTasks.length === 1 ? " thing" : " things") +
+              " to do. " +
+              finishedCount +
+              (finishedCount === 1 ? " star" : " stars") +
+              " in your sky.";
+          }
+
+          document.getElementById("hint").textContent = finishedCount
+            ? "Each star is something you finished. Tap or click one to reopen it."
+            : "";
+
+          const skyButton = document.getElementById("skyBtn");
+          skyButton.hidden = !finishedCount;
+          if (!finishedCount) {
+            document.body.classList.remove("sky");
+            skyButton.textContent = "✦ Sky";
+            skyButton.setAttribute("aria-pressed", "false");
+          }
+
+          const openList = document.getElementById("open");
+          openList.innerHTML = "";
+
+          if (!openTasks.length) {
+            const emptyItem = document.createElement("li");
+            emptyItem.className = "empty-state";
+            emptyItem.textContent = finishedCount
+              ? "All clear."
+              : "Nothing here yet.";
+            openList.appendChild(emptyItem);
+          }
+
+          openTasks.forEach(function (task) {
+            const listItem = document.createElement("li");
+            listItem.className = "glass open-task";
+
+            const finishButton = document.createElement("button");
+            finishButton.className = "finish-button";
+            finishButton.setAttribute(
+              "aria-label",
+              "Mark done: " + task.text,
+            );
+            finishButton.onclick = function () {
+              finishTask(task.id, listItem);
+            };
+
+            const textElement = document.createElement("span");
+            textElement.className = "task-text";
+            textElement.textContent = task.text;
+            textElement.title = isCoarsePointer
+              ? "Tap to edit"
+              : "Double-click to edit";
+            textElement.ondblclick = function () {
+              editTask(task.id, textElement, listItem);
+            };
+            if (isCoarsePointer) {
+              textElement.onclick = function () {
+                editTask(task.id, textElement, listItem);
+              };
+            }
+
+            const ageElement = document.createElement("span");
+            ageElement.className = "task-age";
+            ageElement.textContent = describeAge(task.created);
+
+            listItem.append(finishButton, textElement, ageElement);
+            openList.appendChild(listItem);
+          });
+
+          document.getElementById("archSum").textContent =
+            "Archive and backup (" + finishedCount + " kept forever)";
+          document.getElementById("clearDone").disabled = !finishedCount;
+          if (!finishedCount) {
+            document.getElementById("clearConfirm").hidden = true;
+          }
+
+          const finishedList = document.getElementById("done");
+          finishedList.innerHTML = "";
+
+          finishedTasks.forEach(function (task) {
+            const listItem = document.createElement("li");
+            listItem.className = "archived-task";
+
+            const starElement = document.createElement("span");
+            starElement.className = "star-mark";
+
+            const textElement = document.createElement("span");
+            textElement.className = "task-text";
+            textElement.textContent = task.text;
+
+            const dateElement = document.createElement("span");
+            dateElement.className = "task-age";
+            dateElement.textContent = formatCompletionDate(task.done);
+
+            const reopenButton = document.createElement("button");
+            reopenButton.className = "text-button";
+            reopenButton.textContent = "Reopen";
+            reopenButton.onclick = function () {
+              reopenTask(task.id);
+            };
+
+            listItem.append(
+              starElement,
+              textElement,
+              dateElement,
+              reopenButton,
+            );
+            finishedList.appendChild(listItem);
+          });
+
+          if (prefersReducedMotion) {
+            drawSky(window.performance.now());
+          }
+        }
+
+        // Input controls
+        document.getElementById("addBtn").onclick = function () {
+          const taskInput = document.getElementById("in");
+          addTask(taskInput.value);
+          taskInput.value = "";
+          taskInput.focus();
+        };
+
+        document
+          .getElementById("in")
+          .addEventListener("keydown", function (event) {
+            if (event.key === "Enter") {
+              addTask(this.value);
+              this.value = "";
+            }
+          });
+
+        document.getElementById("reopen").onclick = function () {
+          if (pinnedTaskId) {
+            reopenTask(pinnedTaskId);
+          }
+        };
+
+        // Notes to tomorrow
+        function renderNotes() {
+          const sorted = notes.slice().sort(function (first, second) {
+            return second.at - first.at;
+          });
+          const previous = sorted.filter(function (note) {
+            return calendarDayDiff(note.at) >= 1;
+          })[0];
+
+          const welcome = document.getElementById("note");
+          welcome.innerHTML = "";
+          if (previous) {
+            const quote = document.createElement("b");
+            quote.className = "quote";
+            quote.textContent = "“" + previous.text + "”";
+            const from = document.createElement("small");
+            from.textContent = "From you, " + describeNoteAge(previous.at);
+            welcome.append(quote, from);
+            welcome.hidden = false;
+          } else {
+            welcome.hidden = true;
+          }
+
+          const list = document.getElementById("notes");
+          list.innerHTML = "";
+          sorted.forEach(function (note) {
+            const item = document.createElement("li");
+            const text = document.createElement("b");
+            const date = document.createElement("small");
+            text.textContent = note.text;
+            date.textContent = new Date(note.at).toLocaleDateString(undefined, {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+            });
+            item.append(text, date);
+            list.appendChild(item);
+          });
+
+          document.getElementById("noteSum").textContent = notes.length
+            ? "Note to tomorrow (" + notes.length + " kept)"
+            : "Note to tomorrow";
+        }
+
+        function leaveNote() {
+          const box = document.getElementById("noteBox");
+          const text = box.value.trim();
+          const message = document.getElementById("noteMsg");
+          if (!text) {
+            message.textContent = "Write a line first.";
+            return;
+          }
+
+          notes.push({ id: createTaskId(), text: text, at: Date.now() });
+          saveNotes();
+          box.value = "";
+          try {
+            localStorage.removeItem(DRAFT_KEY);
+          } catch (error) {
+            // Draft removal is optional.
+          }
+          renderNotes();
+          message.textContent = "Saved. It will greet you tomorrow.";
+        }
+
+        document.getElementById("leaveNote").onclick = leaveNote;
+
+        document
+          .getElementById("noteBox")
+          .addEventListener("input", function () {
+            document.getElementById("noteMsg").textContent =
+              "It greets you here tomorrow. Ctrl+Enter also works.";
+            try {
+              localStorage.setItem(DRAFT_KEY, this.value);
+            } catch (error) {
+              // Draft persistence is optional.
+            }
+          });
+
+        document
+          .getElementById("noteBox")
+          .addEventListener("keydown", function (event) {
+            if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+              event.preventDefault();
+              leaveNote();
+            }
+          });
+
+        try {
+          const savedDraft = localStorage.getItem(DRAFT_KEY);
+          if (savedDraft) {
+            document.getElementById("noteBox").value = savedDraft;
+          }
+        } catch (error) {
+          // Draft restoration is optional.
+        }
+
+        document.getElementById("skyBtn").onclick = function () {
+          const enabled = document.body.classList.toggle("sky");
+          this.textContent = enabled ? "Tasks" : "✦ Sky";
+          this.setAttribute("aria-pressed", enabled ? "true" : "false");
+          pinnedTaskId = null;
+          hideStarTooltip();
+        };
+
+        // Backup & completed cleanup
+        const defaultBackupMessage = "A backup holds your tasks and notes.";
+
+        document.getElementById("copy").onclick = function () {
+          const backup = JSON.stringify(
+            { v: 2, tasks: tasks, notes: notes },
+            null,
+            1,
+          );
+          const message = document.getElementById("msg");
+
+          function copied() {
+            message.textContent = "Backup copied. Paste it somewhere safe.";
+          }
+
+          function fallbackCopy() {
+            document.getElementById("restoreBox").hidden = false;
+            const restoreText = document.getElementById("restoreText");
+            restoreText.value = backup;
+            restoreText.focus();
+            restoreText.select();
+            message.textContent =
+              "Copying isn’t allowed here. Press Ctrl+C or ⌘C to copy the selected text.";
+          }
+
+          try {
+            navigator.clipboard.writeText(backup).then(copied, fallbackCopy);
+          } catch (error) {
+            fallbackCopy();
+          }
+        };
+
+        document.getElementById("save").onclick = function () {
+          const backup = JSON.stringify(
+            { v: 2, tasks: tasks, notes: notes },
+            null,
+            1,
+          );
+          const message = document.getElementById("msg");
+          const filename =
+            "sediment-backup-" +
+            new Date().toISOString().slice(0, 10) +
+            ".json";
+
+          try {
+            const url = URL.createObjectURL(
+              new Blob([backup], { type: "application/json" }),
+            );
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.setTimeout(function () {
+              URL.revokeObjectURL(url);
+            }, 1000);
+            message.textContent = "Backup downloaded.";
+          } catch (error) {
+            message.textContent =
+              "Couldn’t save file. Try Copy backup instead.";
+          }
+        };
+
+        document.getElementById("clearDone").onclick = function () {
+          const count = getFinishedTasks().length;
+          if (!count) {
+            return;
+          }
+
+          document.getElementById("clearPrompt").textContent =
+            "Delete " +
+            count +
+            " completed " +
+            (count === 1 ? "task" : "tasks") +
+            " and remove " +
+            (count === 1 ? "its" : "their") +
+            " " +
+            (count === 1 ? "star" : "stars") +
+            "? This can’t be undone unless you saved a backup.";
+          document.getElementById("clearConfirm").hidden = false;
+          document.getElementById("clearYes").focus();
+        };
+
+        document.getElementById("clearNo").onclick = function () {
+          document.getElementById("clearConfirm").hidden = true;
+          document.getElementById("clearDone").focus();
+        };
+
+        document.getElementById("clearYes").onclick = function () {
+          const count = getFinishedTasks().length;
+          document.getElementById("clearConfirm").hidden = true;
+          if (!count) {
+            return;
+          }
+
+          tasks = tasks.filter(function (task) {
+            return !task.done;
+          });
+          pinnedTaskId = null;
+          hoveredTaskId = null;
+          hideStarTooltip();
+          saveTasks();
+          renderTaskList();
+          document.getElementById("msg").textContent =
+            "Deleted " +
+            count +
+            " completed " +
+            (count === 1 ? "task." : "tasks.") +
+            " Saved backup files are unchanged.";
+        };
+
+        document.getElementById("restoreBtn").onclick = function () {
+          document.getElementById("restoreBox").hidden = false;
+          document.getElementById("restoreText").focus();
+        };
+
+        document.getElementById("restoreCancel").onclick = function () {
+          document.getElementById("restoreBox").hidden = true;
+          document.getElementById("restoreText").value = "";
+          document.getElementById("msg").textContent = defaultBackupMessage;
+        };
+
+        document
+          .getElementById("restoreText")
+          .addEventListener("input", function () {
+            document.getElementById("msg").textContent = defaultBackupMessage;
+          });
+
+        document.getElementById("restoreGo").onclick = function () {
+          const message = document.getElementById("msg");
+          let data;
+
+          try {
+            data = JSON.parse(document.getElementById("restoreText").value);
+          } catch (error) {
+            message.textContent = "That text isn’t a valid backup.";
+            return;
+          }
+
+          const rawTasks = Array.isArray(data) ? data : data && data.tasks;
+          const rawNotes = data && data.notes;
+          if (!Array.isArray(rawTasks) && !Array.isArray(rawNotes)) {
+            message.textContent = "That text isn’t a valid backup.";
+            return;
+          }
+
+          const incomingTasks = Array.isArray(rawTasks) ? rawTasks : [];
+          const incomingNotes = Array.isArray(rawNotes) ? rawNotes : [];
+
+          const existingTaskIds = {};
+          const existingNoteIds = {};
+          let addedTasks = 0;
+          let addedNotes = 0;
+
+          tasks.forEach(function (task) {
+            existingTaskIds[String(task.id)] = 1;
+          });
+          notes.forEach(function (note) {
+            existingNoteIds[String(note.id)] = 1;
+          });
+
+          incomingTasks.forEach(function (candidate) {
+            const id =
+              candidate && candidate.id != null ? String(candidate.id) : "";
+            const text =
+              candidate && candidate.text != null
+                ? String(candidate.text).trim()
+                : "";
+            if (id && text && !existingTaskIds[id]) {
+              existingTaskIds[id] = 1;
+              tasks.push({
+                id: id,
+                text: text,
+                created: parseTimestamp(candidate.created, Date.now()),
+                done: candidate.done ? parseTimestamp(candidate.done, null) : null,
+              });
+              addedTasks += 1;
+            }
+          });
+
+          incomingNotes.forEach(function (candidate) {
+            const id =
+              candidate && candidate.id != null ? String(candidate.id) : "";
+            const text =
+              candidate && candidate.text != null
+                ? String(candidate.text).trim()
+                : "";
+            if (id && text && !existingNoteIds[id]) {
+              existingNoteIds[id] = 1;
+              notes.push({
+                id: id,
+                text: text,
+                at: parseTimestamp(candidate.at, Date.now()),
+              });
+              addedNotes += 1;
+            }
+          });
+
+          saveTasks();
+          saveNotes();
+          renderTaskList();
+          renderNotes();
+          document.getElementById("restoreBox").hidden = true;
+          document.getElementById("restoreText").value = "";
+          message.textContent =
+            addedTasks || addedNotes
+              ? "Restored " +
+                addedTasks +
+                (addedTasks === 1 ? " task" : " tasks") +
+                " and " +
+                addedNotes +
+                (addedNotes === 1 ? " note." : " notes.")
+              : "Nothing new to restore. You already have everything.";
+        };
+
+        // Theme
+        const root = document.documentElement;
+        let darkTheme = window.matchMedia(
+          "(prefers-color-scheme: dark)",
+        ).matches;
+
+        try {
+          const savedTheme = localStorage.getItem(THEME_KEY);
+          if (savedTheme === "dark" || savedTheme === "light") {
+            root.setAttribute("data-theme", savedTheme);
+            darkTheme = savedTheme === "dark";
+          }
+        } catch (error) {
+          // The system theme remains in effect.
+        }
+
+        document.getElementById("theme").onclick = function () {
+          darkTheme = !darkTheme;
+          root.setAttribute("data-theme", darkTheme ? "dark" : "light");
+
+          try {
+            localStorage.setItem(THEME_KEY, darkTheme ? "dark" : "light");
+          } catch (error) {
+            // Theme changes still apply for this session.
+          }
+
+          refreshStarColor();
+          if (prefersReducedMotion) {
+            drawSky(window.performance.now());
+          }
+        };
+
+        const systemThemePreference = window.matchMedia(
+          "(prefers-color-scheme: dark)",
+        );
+        if (systemThemePreference.addEventListener) {
+          systemThemePreference.addEventListener("change", function () {
+            window.setTimeout(function () {
+              refreshStarColor();
+              if (prefersReducedMotion) {
+                drawSky(window.performance.now());
+              }
+            }, 50);
+          });
+        }
+
+        // Start the app
+        resizeCanvas();
+        tasks = readTasks();
+        notes = readNotes();
+        ready = true;
+        renderTaskList();
+        renderNotes();
+        window.requestAnimationFrame(animateSky);
+
+        window.setInterval(function () {
+          if (!document.querySelector(".task-editor")) {
+            renderTaskList();
+          }
+          renderNotes();
+        }, 60000);
+
+        document.addEventListener("visibilitychange", function () {
+          if (!document.hidden) {
+            isScrolling = false;
+            document.body.classList.remove("scrolling");
+            if (!document.querySelector(".task-editor")) {
+              renderTaskList();
+            }
+            renderNotes();
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>
